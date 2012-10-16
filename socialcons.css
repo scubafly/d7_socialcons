@@ -1,0 +1,33 @@
+div#socialcons {
+	margin-left: -233px;
+    margin-top: 10px;
+    position: absolute;
+    width: 305px;
+    z-index: 500;
+}
+
+div#socialcons div {
+	margin-right: -2px;
+}
+
+#___plusone_0{ 
+	width:68px !important; 
+}
+
+.twitter-share-button {
+	width: 95px !important;
+}
+
+.fb_ltr{
+	height: 22px !important;
+}
+
+div#socialcons_bar {
+	position: fixed;
+	top: 395px;
+	margin-left: -80px;
+}
+
+div#socialcons_follow_us {
+	margin-left: -25px;
+}

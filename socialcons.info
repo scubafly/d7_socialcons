@@ -1,0 +1,7 @@
+name = Socialcons
+description = Display social icons.
+package = jbbi
+core = 7.x
+files[] = socialcons.module
+
+version = "7.x-1.1"

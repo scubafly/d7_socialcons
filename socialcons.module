@@ -1,0 +1,262 @@
+<?php
+drupal_add_css(drupal_get_path('module', 'socialcons') . '/socialcons.css');
+
+/*  new in 1.1: added base url to image path so images show up on 'sub' pages
+ * 
+ * 
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function socialcons_menu() {
+  $items = array();
+
+	// build admin config forum link
+  $items['admin/config/media/socialcons'] = array(
+    'title' => 'Socialcons',
+    'description' => 'Configuration for Socialcons module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('socialcons_form'),
+    'access arguments' => array('access administration pages'), // only for admin
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Page callback: Socialcons settings
+ * 
+ * @see socialcons_menu().
+ */
+function socialcons_form($form, &$form_state){
+	
+	global $base_url;
+	$form['socialcons_base_url'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Base URL',
+		'#default_value' => variable_get('socialcons_base_url',$base_url),
+		'#description' => t('Enter this sites home url ( used for like, tweet and sharing )'),
+		'#required' => TRUE,
+	);
+	
+	// twitter
+	$form['socialcons_use_twitter'] = array (
+		'#type' => 'checkbox',
+		'#title' => 'show tiwtter icon',
+		'#default_value' => variable_get('socialcons_use_twitter',1),
+		'#required' => FALSE,
+	);
+	
+	$form['socialcons_twitter_username'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Twitter username',
+		'#default_value' => variable_get('socialcons_twitter_username',''),
+		'#size' => 15,
+		'#maxlenght' => 15,
+		'#description' => t('Enter your twitter username without the @, or leave empty (user will not be mentionted)'),
+		'#required' => FALSE,
+	);
+	
+	$form['socialcons_hastag'] = array(
+		'#type' => 'textfield',
+		'#title' => 'hastag',
+		'#default_value' => variable_get('socialcons_hastag','vacature'),
+		'#size' => 15,
+		'#maxlenght' => 15,
+		'#description' => t('Enter a hastag without the # to be included in each tweetshare'),
+		'#required' => FALSE,
+	);
+	
+	// facebook
+	$form['socialcons_use_facebook'] = array (
+		'#type' => 'checkbox',
+		'#title' => 'show facebook icon',
+		'#default_value' => variable_get('socialcons_use_facebook',1),
+		'#required' => FALSE,
+	);
+	
+	$form['socialcons_facebook_url'] = array (
+		'#type' => 'textfield',
+		'#title' => 'Facebook url',
+		'#field_prefix' => 'http://facebook.com/',
+		'#default_value' => variable_get('socialcons_facebook_url',''),
+		'#description' => t('URL to the facebook page'),
+		'#required' => FALSE,
+	);
+	
+	// linkedIn
+	$form['socialcons_use_linkedin'] = array (
+		'#type' => 'checkbox',
+		'#title' => 'show linkedin icon',
+		'#default_value' => variable_get('socialcons_use_linkedin',1),
+		'#required' => FALSE,
+	);
+	
+	$form['socialcons_linkedin_url'] = array (
+		'#type' => 'textfield',
+		'#title' => 'Linkedin URL',
+		'#field_prefix' => 'http://linkedin.com/',
+		'#default_value' => variable_get('socialcons_linkedin_url',''),
+		'#description' => t('URL to the linkedin page'),
+		'#required' => FALSE,
+	);
+	
+	// rss
+	$form['socialcons_use_rss'] = array (
+		'#type' => 'checkbox',
+		'#title' => 'show rss icon',
+		'#default_value' => variable_get('socialcons_use_rss',1),
+		'#required' => FALSE,
+	);
+	
+	$form['socialcons_rss_url'] = array(
+		'#type' => 'textfield',
+		'#title' => 'RSS URL',
+		'#field_prefix' => $base_url .'/',
+		'#default_value' => variable_get('socialcons_rss_url','rss.xml'),
+		'#required' => FALSE,
+	);
+	
+	// G+
+	$form['socialcons_use_gplus'] = array (
+		'#type' => 'checkbox',
+		'#title' => 'show google plus icon',
+		'#default_value' => variable_get('socialcons_use_gplus',1),
+		'#required' => FALSE,
+	);
+	
+	$form['socialcons_gplus_url'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Google plus URL',
+		'#field_prefix' => 'http://plus.google.com/',
+		'#default_value' => variable_get('socialcons_gplus_url',''),
+		'#required' => FALSE,
+	);
+	
+	
+	return system_settings_form($form);
+}
+
+/**
+ * Implements hook_block_info()
+ */
+function socialcons_block_info(){
+	$blocks['socialcons'] = array(
+		'info' => t('socialcons'),
+		'cache' => DRUPAL_CACHE_PER_PAGE,
+		'region' => 'header',
+		'status' => 1,
+	);
+	
+	$blocks['socialcons_sidebar'] = array(
+		'info' => t('socialcons sidebar'),
+		'cache' => DRUPAL_CACHE_PER_PAGE,
+		'region' => 'menu_bar',
+		'status' => 1,
+	);
+	return $blocks;
+}
+
+/**
+ * Implements hook_block_view()
+ */
+function socialcons_block_view($delta = ''){
+		
+	switch($delta) {
+		case 'socialcons':
+			$block['subject'] = t('');
+			$block['content'] = _socialcons_get_sharebuttons();
+		break;
+		
+		case 'socialcons_sidebar':
+			$block['subject'] = t('');
+			$block['content'] = _socialcons_get_followbar();
+		break;		
+	}
+		
+	return $block;
+}
+
+function _socialcons_get_followbar(){
+	global $base_url;
+	
+	$social['starter'] = '<div id="socialcons_bar">';
+	
+	$social['text'] = '<div id="socialcons_follow_us" class="block-title">'.t('Volg ons').'</div>';
+	
+	if(variable_get('socialcons_use_linkedin')) {
+		$social['linkedin'] = '<div><a href="http://linkedin.com/'.variable_get('socialcons_linkedin_url','').'"><img src="'. $base_url .'/' .drupal_get_path('module', 'socialcons') . '/icons/linkedin.png" alt="linkedIn" border="0" /></a></div>';	
+	}
+	
+	if(variable_get('socialcons_use_twitter',1)) {
+		$social['twitter'] = '<div><a href="http://twitter.com/'.variable_get('socialcons_twitter_username','').'"><img src="'. $base_url .'/' .drupal_get_path('module', 'socialcons') . '/icons/Twitter2.png" alt="Twitter" border="0" /></a></div>';
+	}
+	
+	if(variable_get('socialcons_use_rss',1)) {
+		$social['rss'] = '<div><a href="'. $base_url . '/' .variable_get('socialcons_rss_url', 'rss.xml').'"><img src="'. $base_url .'/' .drupal_get_path('module', 'socialcons') . '/icons/RSS.png" alt="rss" border="0" /></a></div>';	
+	}
+	
+	if(variable_get('socialcons_use_facebook',1)) {
+		$social['facebook'] = '<div><a href="http://facebook.com/'.variable_get('socialcons_facebook_url','').'"><img src="'. $base_url .'/' .drupal_get_path('module', 'socialcons') . '/icons/Facebook.png" alt="facebook" border="0" /></a></div>';
+	}
+	
+	if(variable_get('socialcons_use_gplus',1)) {
+		$social['gplus'] = '<div><a href="http://plus.google.com/'.variable_get('socialcons_gplus_url','').'"><img src="'. $base_url .'/' .drupal_get_path('module', 'socialcons') . '/icons/G+.png" alt="Google+" border="0" /></a></div>';
+	}
+		
+	$social['footer'] = '</div>';
+	
+	$sharebuttons = implode(" ", $social);	
+	
+	return $sharebuttons; 
+}
+
+/**
+ * private callback function for like, +1, tweet buttons on top.
+ * TODO fix like button ( popunder screen is behind beta banner )
+ */
+function _socialcons_get_sharebuttons(){
+	global $base_url;
+	$socialcons_base_url = variable_get('socialcons_base_url', $base_url);
+	$twitter_username = variable_get('socialcons_twitter_username','');
+	$hastag = variable_get('socialcons_hastag','vacature');
+	$twitter_button_text = "Tweeten";
+	
+	$social['starter'] = '<div id="socialcons">';
+	
+	$social['facebook'] = '<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_GB/all.js#xfbml=1&appId=269660523054854";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, \'script\', \'facebook-jssdk\'));</script>';
+	
+	$social['facebookdiv'] = '<div class="fb-like" data-send="false" data-href="'.$socialcons_base_url.'" data-layout="button_count" data-width="75" data-show-faces="false" data-font="arial"></div>';
+	
+	$social['gplus'] = "<script type='text/javascript'>
+  window.___gcfg = {lang: 'nl'};
+
+  (function() {
+    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  })();
+</script>";
+
+	$social['gplusdiv'] = '<div class="g-plusone" data-size="medium" data-href="'.$socialcons_base_url.'"></div>';
+	
+	$social['tiwtter'] = '<a href="https://twitter.com/share" class="twitter-share-button" data-url="'.$socialcons_base_url.'" data-width="95px"' .($twitter_username?' data-via="'.$twitter_username.'"':''). 'data-lang="nl" data-hashtags="'.$hastag.' assurantie">'.$twitter_button_text.'</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>';
+	
+	$social['linkedin'] = '<script src="//platform.linkedin.com/in.js" type="text/javascript"></script>
+<script data-url="'.$socialcons_base_url.'" type="IN/Share" data-counter="right"></script>';
+	
+	$social['footer'] = "</div>";
+	$sharebuttons = implode(" ", $social);	
+ 	return $sharebuttons;
+}
